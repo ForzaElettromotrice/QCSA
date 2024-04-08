@@ -3,6 +3,10 @@ from abc import ABC, abstractmethod
 from qiskit import QuantumCircuit
 
 
+# Considerare se fare qualcosa in merito al "carry-in" perché potrebbe causare dei problemi nel QCSA
+# Magari fare 2 tipi di Adder, quelli con carry-in e quelli senza.
+
+
 class Adder(ABC):
     """
     Abstract class representing a generic adder
