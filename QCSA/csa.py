@@ -1,6 +1,6 @@
 from qiskit import QuantumCircuit
 
-from QCSA.adders import Adder, ThapliyalWithCarry, ThapliyalNoCarry
+from QCSA.adders import Adder, ThapliyalWithCarry, Thapliyal, AdderWithCarry
 
 
 class QCSA:
@@ -8,7 +8,7 @@ class QCSA:
     This class represent a Quantum Carry Select Adder
     """
 
-    def __init__(self, n: int, k: int = 0, first_adder: Adder = ThapliyalNoCarry(), second_adder: Adder = ThapliyalWithCarry()) -> None:
+    def __init__(self, n: int, k: int = 0, first_adder: Adder = Thapliyal(), second_adder: AdderWithCarry = ThapliyalWithCarry()) -> None:
         """
 
         :param n: size of the operands
@@ -16,7 +16,7 @@ class QCSA:
         :param first_adder: the first adder to be used in the block
         :param second_adder: the second adder to be used in the block
         """
-        # FIXME: il teoria il secondo adder deve obbligatoriamente avere il carry in
+
         self.n = n
         self.k = k
         self.first_adder = first_adder
