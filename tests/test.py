@@ -1,33 +1,41 @@
 from mqt import ddsim
-from qiskit import QuantumCircuit, QuantumRegister
+from qiskit import QuantumCircuit
 
-from QCSA import merge_circuit
-from QCSA.adders import ThapliyalNoCarry
+from QCSA.adders import ThapliyalWithCarry
+
+
+def simulate(c: QuantumCircuit) -> dict[str:int]:
+    backend = ddsim.DDSIMProvider().get_backend("qasm_simulator")
+
+    job = backend.run(c)
+    result = job.result()
+
+    out: dict[str:int] = result.get_counts(c)
+
+    print(out)
+    return out
+
+
+def parse(o: str) -> None:
+    print(f"a = {o[5:]}\nb = {o[1:5]}\nz = {o[0]}")
+
+
+def parseC(o: str) -> None:
+    print(f"c = {o[-1]}\na = {o[5:9]}\nb = {o[1:5]}\nz = {o[0]}")
+
 
 if __name__ == '__main__':
-    # circ = QuantumCircuit()
+    adder = ThapliyalWithCarry()
 
-    # a = QuantumRegister(2, "a")
-    # b = QuantumRegister(2, "b")
-    # z = QuantumRegister(1, "z")
-    # circ.add_register(a, b, z)
-    #
-    # circ.x(a[0])
-    # circ.x(b[0])
-    #
-    # merge_circuit(circ, ThapliyalNoCarry().build(2))
-    #
-    # print(circ.draw())
-    #
-    # circ.measure_all()
+    adder.build(4)
 
-    # backend = ddsim.DDSIMProvider().get_backend("qasm_simulator")
-    # job = backend.run(circ, shots = 10000)
-    # counts = job.result().get_counts(circ)
-    # print(counts)
-    #
-    # out = list([key for key in counts.keys()][0])
-    # print("  z |    b    |    a")
-    # print(out)
+    circ = adder.initialize("1", "1111", "1111")
 
-    print(ThapliyalNoCarry().build(8).draw())
+    circ.measure_all()
+    print(circ.draw())
+
+    out = simulate(circ)
+
+    print(f"a = 1111\nb = 1111\nz = 0")
+    print()
+    parseC([key for key in out.keys()][0])
