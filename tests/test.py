@@ -1,7 +1,9 @@
 from mqt import ddsim
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, QuantumRegister
 
+from QCSA import merge_circuit
 from QCSA.adders import ThapliyalWithCarry
+from QCSA.csa import QCSA
 
 
 def simulate(c: QuantumCircuit) -> dict[str:int]:
@@ -25,17 +27,30 @@ def parseC(o: str) -> None:
 
 
 if __name__ == '__main__':
-    adder = ThapliyalWithCarry()
+    # adder = ThapliyalWithCarry()
+    #
+    # adder.build(4, "Cin0", "a0", "b0", "z0")
+    #
+    # circ = adder.initialize("1", "1111", "1111")
+    #
+    # circ.measure_all()
+    # print(circ.draw())
+    #
+    # out = simulate(circ)
+    #
+    # print(f"a = 1111\nb = 1111\nz = 0")
+    # print()
+    # parseC([key for key in out.keys()][0])
 
-    adder.build(4)
-
-    circ = adder.initialize("1", "1111", "1111")
+    qcsa = QCSA(8, 2)
+    qcsa.initialize("00000001", "11111111", "0")
+    circ = qcsa.build()
+    print(circ.draw("latex_source"), file = open("out.tex", "w"))
+    # print(circ.draw())
 
     circ.measure_all()
-    print(circ.draw())
+    result = simulate(circ)
 
-    out = simulate(circ)
-
-    print(f"a = 1111\nb = 1111\nz = 0")
-    print()
-    parseC([key for key in out.keys()][0])
+    string = [key for key in result.keys()][0]
+    b = string[-31:-29] + string[-20:-18] + string[-9:-7] + string[-4:-2]
+    print(b)

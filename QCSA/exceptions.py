@@ -10,3 +10,15 @@ class IllegalStringFormat(Exception):
     Raised when an illegal string is passed during the initialize of an Adder
     """
     pass
+
+
+class IllegalArgument(Exception):
+    pass
+
+
+class IllegalAdder(Exception):
+    pass
+
+
+class IllegalOperation(Exception):
+    pass

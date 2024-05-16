@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from qiskit import QuantumCircuit, QuantumRegister
 
 from QCSA import merge_circuit
-from QCSA.exceptions import IllegalOperandsSize, IllegalStringFormat
+from QCSA.exceptions import IllegalOperandsSize, IllegalStringFormat, IllegalOperation
 from QCSA.gates import Peres, TR
 
 
@@ -16,17 +16,28 @@ class Adder(ABC):
     Abstract class representing a generic adder
     """
 
+    def __init__(self, name: str):
+        self.a: QuantumRegister | None = None
+        self.b: QuantumRegister | None = None
+        self.z: QuantumRegister | None = None
+        self.n = 0
+        self.circ = QuantumCircuit(name = name)
+
+
+class AdderNoCarry(Adder, ABC):
+
     @abstractmethod
-    def build(self, n: int) -> QuantumCircuit:
+    def build(self, n: int, a_name: str = "a", b_name: str = "b", z_name: str = "z") -> QuantumCircuit:
         """
         This function builds the adder based on the size of the operands
+        :param a_name: the name of the first operand
+        :param b_name: the name of the second operand
+        :param z_name: the name of the Carry-Out
         :param n: the size of the two operands
         :return: a :class:`QuantumCircuit` representing the Quantum Adder
         """
         pass
 
-
-class AdderNoCarry(Adder, ABC):
     @abstractmethod
     def initialize(self, a: str, b: str) -> QuantumCircuit:
         """
@@ -45,13 +56,30 @@ class AdderWithCarry(Adder, ABC):
         Abstract class representing a generic adder with carry in
     """
 
+    def __init__(self, name: str):
+        self.c: QuantumRegister | None = None
+        super().__init__(name)
+
     @abstractmethod
-    def initialize(self, Cin: str, a: str, b: str) -> QuantumCircuit:
+    def build(self, n: int, c_name: str = "c", a_name: str = "a", b_name: str = "b", z_name: str = "z") -> QuantumCircuit:
+        """
+        This function builds the adder based on the size of the operands
+        :param c_name: the name of the Carry-In
+        :param a_name: the name of the first operand
+        :param b_name: the name of the second operand
+        :param z_name: the name of the Carry-Out
+        :param n: the size of the two operands
+        :return: a :class:`QuantumCircuit` representing the Quantum Adder
+        """
+        pass
+
+    @abstractmethod
+    def initialize(self, c_in: str, a: str, b: str) -> QuantumCircuit:
         """
         This function initializes the two operands based on the strings passed as input.
         The strings represent binary numbers and their length must match the size of the operands.
 
-        :param Cin: A string representing the carry in. '0' or '1'.
+        :param c_in: A string representing the carry in. '0' or '1'.
         :param a: A string representing the first binary number.
         :param b: A string representing the second binary number.
         :return: A QuantumCircuit with the initialized operands.
@@ -68,19 +96,17 @@ class Thapliyal(AdderNoCarry):
         """
         Initialize the adder
         """
-        self.a: QuantumRegister | None = None
-        self.b: QuantumRegister | None = None
-        self.z: QuantumRegister = QuantumRegister(1, "z")
-        self.circ = QuantumCircuit(name = "Thapliyal Adder")
-        self.n = 0
+        super().__init__("Thapliyal Adder")
 
-    def build(self, n: int) -> QuantumCircuit:
+    def build(self, n: int, a_name: str = "a", b_name: str = "b", z_name: str = "z") -> QuantumCircuit:
         if n < 2:
             raise IllegalOperandsSize(f"The size of the operands must be >= 2, given {n}")
         self.n = n
-        self.a = QuantumRegister(n, "a")
-        self.b = QuantumRegister(n, "b")
-        self.circ.add_register(self.a, self.b, self.z)
+        self.a = QuantumRegister(n, a_name)
+        self.b = QuantumRegister(n, b_name)
+        self.z = QuantumRegister(1, z_name)
+
+        self.circ = QuantumCircuit(self.a, self.b, self.z, name = self.circ.name)
 
         self.__1_6()
         self.__2()
@@ -92,6 +118,7 @@ class Thapliyal(AdderNoCarry):
         return self.circ
 
     def initialize(self, a: str, b: str) -> QuantumCircuit:
+        # FIXME: controllare se l'adder non è stato buildato
         if len(a) != self.n or len(b) != self.n:
             raise IllegalStringFormat(f"The string \"{a}\" or \"{b}\" doesn't match the len of the operand! {len(a)} != {self.n} or {len(b)} != {self.n}")
 
@@ -158,20 +185,19 @@ class ThapliyalWithCarry(AdderWithCarry):
         """
         Initialize the adder
         """
-        self.c: QuantumRegister = QuantumRegister(1, "Cin")
-        self.a: QuantumRegister | None = None
-        self.b: QuantumRegister | None = None
-        self.z: QuantumRegister = QuantumRegister(1, "z")
-        self.circ = QuantumCircuit(name = "Thapliyal Adder With Carry in")
-        self.n = 0
+        super().__init__("Thapliyal Adder With Carry in")
 
-    def build(self, n: int) -> QuantumCircuit:
+    def build(self, n: int, c_name: str = "Cin", a_name: str = "a", b_name: str = "b", z_name: str = "z") -> QuantumCircuit:
         if n < 2:
             raise IllegalOperandsSize(f"The size of the operands must be >= 2, given {n}")
         self.n = n
-        self.a = QuantumRegister(n, "a")
-        self.b = QuantumRegister(n, "b")
-        self.circ.add_register(self.c, self.a, self.b, self.z)
+
+        self.c = QuantumRegister(1, c_name)
+        self.a = QuantumRegister(n, a_name)
+        self.b = QuantumRegister(n, b_name)
+        self.z = QuantumRegister(1, z_name)
+
+        self.circ = QuantumCircuit(self.c, self.a, self.b, self.z, name = self.circ.name)
 
         self.__1_6()
         self.__2()
@@ -182,11 +208,11 @@ class ThapliyalWithCarry(AdderWithCarry):
 
         return self.circ
 
-    def initialize(self, Cin: str, a: str, b: str) -> QuantumCircuit:
+    def initialize(self, c_in: str, a: str, b: str) -> QuantumCircuit:
         if len(a) != self.n or len(b) != self.n:
             raise IllegalStringFormat(f"The string \"{a}\" or \"{b}\" doesn't match the len of the operand! {len(a)} != {self.n} or {len(b)} != {self.n}")
-        elif Cin != '0' and Cin != '1':
-            raise IllegalStringFormat(f"The Cin must be '0' or '1' not {Cin}")
+        elif c_in != '0' and c_in != '1':
+            raise IllegalStringFormat(f"The Cin must be '0' or '1' not {c_in}")
 
         for i in a:
             if i != '0' and i != '1':
@@ -197,7 +223,7 @@ class ThapliyalWithCarry(AdderWithCarry):
 
         circ = QuantumCircuit(self.c, self.a, self.b, self.z, name = "Thapliyal Adder With Carry in")
 
-        if Cin == '1':
+        if c_in == '1':
             circ.x(self.c)
 
         for i, v in enumerate(a[::-1]):
