@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from qiskit import QuantumCircuit, QuantumRegister
 
 from QCSA import merge_circuit
-from QCSA.exceptions import IllegalOperandsSize, IllegalStringFormat, IllegalOperation
+from QCSA.exceptions import IllegalOperandsSize, IllegalStringFormat
 from QCSA.gates import Peres, TR
 
 
@@ -288,3 +288,84 @@ class ThapliyalWithCarry(AdderWithCarry):
         for i in range(self.n - 1, 0, -1):
             self.circ.cx(self.a[i], self.a[i - 1])
         self.circ.cx(self.a[0], self.c[0])
+
+
+class HaiShengLi(AdderNoCarry):
+    """
+    The Hai-Sheng Li, Ping Fan, Haiying Xia, Huiling Peng, and Gui-Lu Long quantum adder without carry in
+    """
+
+    def __init__(self):
+        """
+        Initialize the adder
+        """
+        super().__init__("Hai Sheng Li Adder without carry in")
+
+    def build(self, n: int, a_name: str = "a", b_name: str = "b", z_name: str = "z") -> QuantumCircuit:
+        if n < 2:
+            raise IllegalOperandsSize(f"The size of the operands must be >= 2, given {n}")
+        self.n = n
+
+        self.a = QuantumRegister(n, a_name)
+        self.b = QuantumRegister(n, b_name)
+        self.z = QuantumRegister(1, z_name)
+
+        self.circ = QuantumCircuit(self.a, self.b, self.z, name = self.circ.name)
+
+        self.__1()
+        self.__2()
+        self.__3()
+        self.__4()
+        self.__5()
+        self.__6()
+        self.__1()
+
+        return self.circ
+
+    def initialize(self, a: str, b: str) -> QuantumCircuit:
+        # FIXME: controllare se l'adder non è stato buildato
+        if len(a) != self.n or len(b) != self.n:
+            raise IllegalStringFormat(f"The string \"{a}\" or \"{b}\" doesn't match the len of the operand! {len(a)} != {self.n} or {len(b)} != {self.n}")
+
+        circ = QuantumCircuit(self.a, self.b, self.z, name = "Hai Sheng Li Adder without carry in")
+        for i, v in enumerate(a[::-1]):
+            if v == "1":
+                circ.x(self.a[i])
+
+        for i, v in enumerate(b[::-1]):
+            if v == "1":
+                circ.x(self.b[i])
+
+        merge_circuit(circ, self.circ)
+
+        self.circ = circ
+
+        return self.circ
+
+    def __1(self):
+        for i in range(1, self.n):
+            self.circ.cx(self.a[i], self.b[i])
+
+    def __2(self):
+        self.circ.cx(self.a[-1], self.z)
+
+        for i in range(self.n - 2, 0, -1):
+            self.circ.cx(self.a[i], self.a[i + 1])
+
+    def __3(self):
+        for i in range(0, self.n - 1):
+            self.circ.append(Peres(), [self.a[i], self.b[i], self.a[i + 1]])
+
+        self.circ.append(Peres(), [self.a[-1], self.b[-1], self.z[0]])
+
+    def __4(self):
+        for i in range(self.n - 2, -1, -1):
+            self.circ.append(TR(), [self.a[i], self.b[i], self.a[i + 1]])
+
+    def __5(self):
+        for i in range(0, self.n - 1):
+            self.circ.cx(self.b[i], self.a[i])
+
+    def __6(self):
+        for i in range(1, self.n - 1):
+            self.circ.cx(self.a[i], self.a[i + 1])
